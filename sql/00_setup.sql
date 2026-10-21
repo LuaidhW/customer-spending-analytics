@@ -1,4 +1,4 @@
-CREATE VIEW transactions_GBP AS
+CREATE OR REPLACE VIEW transactions_GBP AS
 SELECT t.*, t.amount * CASE
                             WHEN a.currency = 'USD' THEN 0.77
                             WHEN a.currency = 'EUR' THEN 0.85
@@ -8,7 +8,7 @@ SELECT t.*, t.amount * CASE
 FROM transactions t JOIN accounts a ON t.account_id = a.account_id;
 
 
-CREATE VIEW customer_category_spending AS
+CREATE OR REPLACE VIEW customer_category_spending AS
 WITH customer_category_pairs AS (
     SELECT a.customer_id, m.category
     FROM (SELECT DISTINCT customer_id FROM accounts) a CROSS JOIN (SELECT DISTINCT category FROM merchants) m
@@ -24,14 +24,15 @@ SELECT ccp.customer_id, ccp.category, COALESCE(cs.debits_value, 0) AS debits_val
 FROM customer_category_pairs ccp LEFT JOIN customer_spending cs ON ccp.customer_id = cs.customer_id AND ccp.category = cs.category;
 
 
-CREATE VIEW customer_monthly_spending AS
+CREATE OR REPLACE VIEW customer_monthly_spending AS
 WITH months AS (
     SELECT month
     FROM generate_series(DATE '2024-01-01', DATE '2025-12-01', INTERVAL '1 MONTH') AS t(month)
 ),
 customer_month_pairs AS (
-    SELECT a.customer_id, m.month
-    FROM (SELECT DISTINCT customer_id FROM accounts) a CROSS JOIN months m
+    SELECT DISTINCT(a.customer_id), m.month
+    FROM accounts a CROSS JOIN months m
+    WHERE a.opened_on < m.month + INTERVAL '1 MONTH' AND (a.closed_on is NULL OR a.closed_on > m.month)
 ),
 monthly_spending AS (
     SELECT a.customer_id, DATE_TRUNC('month', t.posted_at) AS month, SUM(t.amount_GBP) AS debits_value
