@@ -1,5 +1,8 @@
+--These queries were used to double-check values produced in the spending by category analysis in Tableau
+
 SELECT * FROM customer_category_spending ORDER BY customer_id, debits_value DESC;
 
+--Calculates mean by category, with and without zero spenders in each category
 SELECT 
     category,
     AVG(debits_value) AS mean_including_zeros, 
@@ -8,6 +11,7 @@ FROM customer_category_spending
 GROUP BY category
 ORDER BY mean_including_zeros DESC;
 
+----Calculates median by category, with and without zero spenders in each category
 SELECT 
     category,
     MEDIAN(debits_value) AS median_including_zeros,
@@ -16,7 +20,7 @@ FROM customer_category_spending
 GROUP BY category
 ORDER BY median_including_zeros DESC;
 
-
+--Calculates the percentage of customers who spent money in the corresponding merchant category
 WITH category_spenders AS (
     SELECT 
         category,
@@ -32,37 +36,3 @@ SELECT
     total_spenders/total_customers * 100 AS percentage_spenders
 FROM category_spenders
 ORDER BY total_spenders DESC;
-
-
--- General spending habits
-/*
-SELECT m.category, 
-    SUM(t.amount) FILTER (WHERE t.direction = 'credit') AS total_credits,
-    SUM(t.amount) FILTER (WHERE t.direction = 'debit') AS total_debits,
-    SUM(CASE WHEN t.direction = 'credit' THEN t.amount ELSE -t.amount END) AS net
-FROM transactions AS t
-JOIN merchants AS m ON t.merchant_id = m.merchant_id
-GROUP BY m.category
-ORDER BY net ASC;
-
-SELECT m.country, COUNT(*) AS num_debits, SUM(t.amount) AS debit_amount
-FROM transactions AS t
-JOIN merchants AS m ON t.account_id = m.merchant_id
-WHERE t.direction = 'debit' GROUP BY country
-ORDER BY debit_amount DESC;
-
-SELECT category, COUNT(*) AS num_debits, AVG(amount) AS average, SUM(amount) AS total
-FROM merchants m JOIN transactions t ON m.merchant_id = t.merchant_id
-WHERE direction = 'debit'
-GROUP BY category
-ORDER BY total DESC;
-
--- Personalised spending habits
-
-SELECT a.customer_id, m.category, COUNT(*) AS num_debits, AVG(t.amount) AS average, SUM(t.amount) AS total
-FROM transactions t JOIN accounts a ON t.account_id = a.account_id
-JOIN merchants m ON t.merchant_id = m.merchant_id
-WHERE t.direction = 'debit'
-GROUP BY a.customer_id, m.category
-ORDER BY a.customer_id, total DESC;
-*/

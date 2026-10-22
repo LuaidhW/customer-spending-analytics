@@ -1,3 +1,4 @@
+--Converts all transaction amounts into GBP
 CREATE OR REPLACE VIEW transactions_GBP AS
 SELECT t.*, t.amount * CASE
                             WHEN a.currency = 'USD' THEN 0.77
@@ -8,6 +9,9 @@ SELECT t.*, t.amount * CASE
 FROM transactions t JOIN accounts a ON t.account_id = a.account_id;
 
 
+--CSV files corresponding to the two views below are how Tableau interacts with the dataset.
+
+--Extracts all customer_id-category pairs and the corresponding total debit value for those pairs
 CREATE OR REPLACE VIEW customer_category_spending AS
 WITH customer_category_pairs AS (
     SELECT a.customer_id, m.category
@@ -24,6 +28,8 @@ SELECT ccp.customer_id, ccp.category, COALESCE(cs.debits_value, 0) AS debits_val
 FROM customer_category_pairs ccp LEFT JOIN customer_spending cs ON ccp.customer_id = cs.customer_id AND ccp.category = cs.category;
 
 
+--Extracts all customer_id-month pairs across the two year transacstion period
+--and the corresponding total debit value for those pairs
 CREATE OR REPLACE VIEW customer_monthly_spending AS
 WITH months AS (
     SELECT month
